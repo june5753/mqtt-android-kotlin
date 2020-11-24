@@ -159,10 +159,18 @@
                 android:text="@string/btn_clear" />
 
             <TextView
+                android:id="@+id/tvEveryTime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="实时收发耗时（ms）："
+                android:textColor="@color/colorPrimary"
+                tools:ignore="HardcodedText" />
+
+            <TextView
                 android:id="@+id/tvAverTime"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="平均时间一次收发耗时（ms）："
+                android:text="100次完成后平均一次收发耗时（ms）："
                 android:textColor="@color/colorPrimaryDark"
                 tools:ignore="HardcodedText" />
 

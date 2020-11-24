@@ -102,28 +102,6 @@ class MainActivity : AppCompatActivity() {
     @SuppressLint("SetTextI18n")
     private fun setListener() {
 
-        btnConfirm.setOnClickListener {
-            val getClientId = etClientId.text.toString().trim()
-            if (getClientId.isNotEmpty()) {
-                init()
-                mMqttConfig?.setCustomerId(getClientId)
-                tvClientId.text = "当前Client id: " + MqttManager.getInstance().getClientId()
-            } else {
-                toast("请输入10位以内的数字")
-            }
-        }
-
-        btnDesConfirm.setOnClickListener {
-            val getDesClientId = etDesClientId.text.toString().trim()
-            if (getDesClientId.isNotEmpty()) {
-                init()
-                mMqttConfig?.setDesClientId(getDesClientId)
-                tvDesClientId.text = "目标Client id: " + MqttManager.getInstance().getDesClientId()
-            } else {
-                toast("请输入10位以内的数字")
-            }
-        }
-
         // 连接服务端
         btnConnect.setOnClickListener {
             connectStartTime = System.currentTimeMillis()
@@ -217,15 +195,14 @@ class MainActivity : AppCompatActivity() {
             //记录当前最小值和最大值
             minTime = minTime.coerceAtMost(currentAverTime)
             maxTime = maxTime.coerceAtLeast(currentAverTime)
-            MqttLoger.e("countTime,时间差：$currentAverTime")
-            MqttLoger.e("countTime,averTime:$totalAverTime")
+
+            tvEveryTime.text = "实时收发耗时（ms）$currentAverTime"
+            tvMinTime.text = "当前最小值（ms）:$minTime"
+            tvMaxTime.text = "当前最大值（ms）:$maxTime"
         }
         if (receiverMsgNum == MAX) {
             val averTime: Long = totalAverTime / (MAX / 2)
-            MqttLoger.e("countTime,平均时间差：$averTime")
-            tvAverTime.text = "平均时间一次收发耗时（ms):$averTime"
-            tvMinTime.text = "当前最小值（ms）:$minTime"
-            tvMaxTime.text = "当前最大值（ms）:$maxTime"
+            tvAverTime.text = "100次完成后平均一次收发耗时（ms):$averTime"
             reset()
             return
         }

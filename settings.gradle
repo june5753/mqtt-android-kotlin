@@ -1,0 +1,3 @@
+include ':mqtt-lib'
+include ':app'
+rootProject.name = "mqtt-android-kotlin"

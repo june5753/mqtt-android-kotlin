@@ -22,6 +22,8 @@ MQTT Demo说明：
 
 4. 详细文档与测试结果可参考：[阿里云MQTT调研情况初稿](http://confluence.fiture.com/pages/viewpage.action?pageId=27564821)
 
-5. Demo修改自阿里云Android Demo.
+5. Demo修改自阿里云Android Demo. 参考：[imq-android-demo](https://code.aliyun.com/aliware_mqtt/mqtt-demo/tree/master?spm=a2c4g.11186623.2.38.2a6d6fc61PlS3K)
 
-参考：[imq-android-demo](https://code.aliyun.com/aliware_mqtt/mqtt-demo/tree/master?spm=a2c4g.11186623.2.38.2a6d6fc61PlS3K)
+6. 运行截图：
+
+   <img src="screen/运行截图.png" alt="运行截图" style="zoom:50%;" />

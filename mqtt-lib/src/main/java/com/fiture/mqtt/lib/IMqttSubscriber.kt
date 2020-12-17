@@ -43,7 +43,6 @@ interface IMqttSubscriber {
      */
     fun onConnectFailed(connectFailed: (throwable: Throwable?) -> Unit)
 
-    /*******************以下 阿里云MQTT P2P中优化了订阅逻辑，代码中无需调用 预留*************************/
     /**
      * 订阅成功
      */
@@ -53,5 +52,4 @@ interface IMqttSubscriber {
      * 订阅失败
      */
     fun onSubscriberFailed(subscriberFailed: (exception: Throwable?) -> Unit)
-    /**********************************************************************************************/
 }

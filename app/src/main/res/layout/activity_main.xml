@@ -14,96 +14,16 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_margin="5dp"
-                android:text="自定义当前ClientID:"
-                android:visibility="gone"
-                tools:ignore="HardcodedText" />
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:visibility="gone">
-
-                <EditText
-                    android:id="@+id/etClientId"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="5dp"
-                    android:layout_marginLeft="5dp"
-                    android:layout_weight="1"
-                    android:hint="请输入10位以内的数字"
-                    android:inputType="phone"
-                    android:maxLength="10"
-                    android:text="12345"
-                    tools:ignore="HardcodedText" />
-
-                <Button
-                    android:id="@+id/btnConfirm"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="5dp"
-                    android:layout_marginLeft="5dp"
-                    android:layout_weight="1"
-                    android:text="@string/confirm" />
-            </LinearLayout>
 
             <TextView
                 android:id="@+id/tvClientId"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_margin="5dp"
-                android:text="自定义当前ClientID:"
+                android:text="当前ClientID:"
                 tools:ignore="HardcodedText" />
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_margin="5dp"
-                android:text="目标方ClientID:"
-                android:visibility="gone"
-                tools:ignore="HardcodedText" />
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:visibility="gone">
-
-                <EditText
-                    android:id="@+id/etDesClientId"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="5dp"
-                    android:layout_marginLeft="5dp"
-                    android:layout_weight="1"
-                    android:hint="请输入10位以内的数字"
-                    android:inputType="phone"
-                    android:maxLength="10"
-                    android:text="54321"
-                    tools:ignore="HardcodedText" />
-
-                <Button
-                    android:id="@+id/btnDesConfirm"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="5dp"
-                    android:layout_marginLeft="5dp"
-                    android:layout_weight="1"
-                    android:text="@string/confirm" />
-            </LinearLayout>
-
-            <TextView
-                android:id="@+id/tvDesClientId"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_margin="5dp"
-                android:text="目标Client id :"
-                android:visibility="gone"
-                tools:ignore="HardcodedText" />
 
             <Button
                 android:id="@+id/btnConnect"
@@ -126,8 +46,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_margin="5dp"
-                android:text="@string/btn_subscribe"
-                android:visibility="gone" />
+                android:text="@string/btn_subscribe" />
 
             <Button
                 android:id="@+id/btnPublish"

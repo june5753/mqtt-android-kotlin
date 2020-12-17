@@ -1,17 +1,18 @@
 package com.fiture.mqtt.lib
 
 import android.content.Context
+import android.os.SystemClock
 import org.eclipse.paho.android.service.MqttAndroidClient
 import org.eclipse.paho.client.mqttv3.*
 
 /**
  *<pre>
  *  author : juneYang
- *  time   : 2020/11 /23
+ *  time   : 2020/11/23
  *  desc   : 消息队列管理器
  * 使用流程：
  * 1，配置MqttConfig，设置账号和密码，MqttConfig().create()。
- * 2，初始化Mqtt客户端，MqttManager.getInstance().init(activity, MqttConfig().create())，建议在MainActivity的onCreate中调用。
+ * 2，初始化Mqtt客户端，MqttManager.getInstance().init(activity, MqttConfig().create())
  * 3，连接Mqtt客户端，MqttManager.getInstance().connect()，建议在init方法后调用。
  * 4，订阅Topic，MqttManager.getInstance().subscribe(topic, subscriber)，并在subscriber中处理消息的回调。
  * 5，发布消息，MqttManager.getInstance().publishMessage(topic,content)。
@@ -32,18 +33,12 @@ class MqttManager {
      */
     fun init(
         context: Context,
-        config: MqttConfig,
-        subscriber: (MqttSubscriber.() -> Unit)? = null
+        config: MqttConfig
     ) {
         mConfig = config
         mMqttClient = MqttAndroidClient(context, config.getBaseUrl(), config.getClientId())
 
-        val callback = MqttSubscriber()
-        subscriber?.let { callback.it() }
-
-        //回调方法可考虑再拆分
         mMqttClient?.setCallback(object : MqttCallbackExtended {
-
             override fun connectComplete(reconnect: Boolean, serverURI: String) {
                 if (reconnect) {
                     MqttLoger.e("----> mqtt reconnect complete, serverUrl = $serverURI")
@@ -53,29 +48,32 @@ class MqttManager {
             }
 
             override fun connectionLost(cause: Throwable?) {
-
-                //此处无订阅事件，这里不需要
-//                mSubscribers.entries.forEach {
-//                    it.value.connectLost?.invoke(cause)
-//                }
-//
-                callback.connectLost?.invoke(cause)
+                mSubscribers.entries.forEach {
+                    it.value.connectLost?.invoke(cause)
+                }
                 MqttLoger.e("----> mqtt connect lost, cause = ${cause?.message}")
             }
 
             override fun messageArrived(topic: String, message: MqttMessage) {
-                callback.messageArrived?.invoke(topic, String(message.payload), message.qos)
+                val subscriber = mSubscribers[topic]
+                subscriber?.messageArrived?.invoke(topic, String(message.payload), message.qos)
                 MqttLoger.e("----> mqtt message arrived, topic = $topic, message = ${String(message.payload)}")
             }
 
             override fun deliveryComplete(token: IMqttDeliveryToken) {
-                callback.deliveryComplete?.invoke(token.message.toString())
+                mSubscribers.entries.forEach {
+                    it.value.deliveryComplete?.invoke(token.message.toString())
+                }
                 MqttLoger.e("----> mqtt delivery complete, token = ${token.message}")
             }
         })
     }
 
-    /**M
+    fun getMqttClient(): MqttAndroidClient? {
+        return mMqttClient
+    }
+
+    /**
      * 连接服务器
      * @param subscriber 表示当前方法的回调，并不会作用到全局
      */
@@ -86,19 +84,11 @@ class MqttManager {
         }
         val callback = MqttSubscriber()
         subscriber?.let { callback.it() }
-
-
         try {
-            mMqttClient?.connect(generateConnectOptions(), null, object : IMqttActionListener {
+            mMqttClient?.connect(generateConnectOptions, null, object : IMqttActionListener {
                 override fun onSuccess(asyncActionToken: IMqttToken?) {
                     MqttLoger.e("connect success")
                     callback.connectSuccess?.invoke()
-
-                    val disconnectedBufferOptions = DisconnectedBufferOptions()
-                    disconnectedBufferOptions.isBufferEnabled = true
-                    disconnectedBufferOptions.bufferSize = 100
-                    disconnectedBufferOptions.isPersistBuffer = false
-                    disconnectedBufferOptions.isDeleteOldestMessages = false
                     mMqttClient?.setBufferOpts(disconnectedBufferOptions)
                 }
 
@@ -113,7 +103,7 @@ class MqttManager {
     }
 
     /**
-     * 订阅一个话题(不里不需要)
+     * 订阅一个话题
      */
     fun subscribe(topic: String, subscriber: (MqttSubscriber.() -> Unit)? = null) {
         if (mMqttClient == null) {
@@ -135,16 +125,36 @@ class MqttManager {
     }
 
     /**
-     * 订阅实现(不里不需要)
+     * 退订一个topic
+     */
+    fun unsubscribe(topic: String) {
+        mSubscribers.remove(topic)
+        mMqttClient?.unsubscribe(topic, null, object : IMqttActionListener {
+            override fun onSuccess(asyncActionToken: IMqttToken?) {
+                MqttLoger.e("----> mqtt unsubscribe success, topic = $topic")
+            }
+
+            override fun onFailure(asyncActionToken: IMqttToken?, exception: Throwable?) {
+                MqttLoger.e("----> mqtt unsubscribe failed, exception = ${exception?.message}")
+            }
+        })
+    }
+
+    /**
+     * 订阅实现
      */
     private fun performSubscribe(topic: String, subscriber: (MqttSubscriber.() -> Unit)? = null) {
         // 判断是否已经订阅
-        if (mSubscribers.containsKey(topic)) return
+        if (mSubscribers.containsKey(topic)) {
+            MqttLoger.e("----> mqtt subscribe contains key,had Subscribers, topic = $topic,return")
+            return
+        }
+
         val callback = MqttSubscriber()
         subscriber?.let { callback.it() }
         mSubscribers[topic] = callback
         try {
-            mMqttClient?.subscribe(topic, 0, null, object : IMqttActionListener {
+            mMqttClient?.subscribe(topic, QOS_LEVEL, null, object : IMqttActionListener {
                 override fun onSuccess(asyncActionToken: IMqttToken) {
                     callback.subscriberSuccess?.invoke()
                     MqttLoger.e("----> mqtt subscribe success, topic = $topic")
@@ -163,15 +173,27 @@ class MqttManager {
     /**
      * 生成默认的连接配置
      */
-    private fun generateConnectOptions(): MqttConnectOptions {
-        val options = MqttConnectOptions()
-        options.connectionTimeout = 3000
-        options.keepAliveInterval = 90
-        options.isAutomaticReconnect = true
-        options.isCleanSession = true
-        options.userName = mConfig?.getUserName()
-        options.password = mConfig?.getPassword()
-        return options
+    private val generateConnectOptions: MqttConnectOptions by lazy {
+        MqttConnectOptions().apply {
+            // 设置超时时间 单位为秒
+            connectionTimeout = 30
+            //设置会话心跳时间 单位为秒 服务器会每隔15秒的时间向客户端发送个消息判断客户端是否在线，但这个方法并没有重连的机制
+            keepAliveInterval = 15
+            isAutomaticReconnect = true
+            // 设置是否清空session,这里如果设置为false表示服务器会保留客户端的连接记录，这里设置为true表示每次连接到服务器都以新的身份连接
+            isCleanSession = true
+            userName = mConfig?.getUserName()
+            password = mConfig?.getPassword()?.toCharArray()
+        }
+    }
+
+    private val disconnectedBufferOptions: DisconnectedBufferOptions by lazy {
+        DisconnectedBufferOptions().apply {
+            isBufferEnabled = true
+            bufferSize = 100
+            isPersistBuffer = false
+            isDeleteOldestMessages = false
+        }
     }
 
     /**
@@ -200,6 +222,7 @@ class MqttManager {
         try {
             val message = MqttMessage()
             message.payload = content.toByteArray()
+            message.qos = QOS_LEVEL
             mMqttClient?.publish(topic, message, null, object : IMqttActionListener {
                 override fun onSuccess(asyncActionToken: IMqttToken?) {
                     MqttLoger.d("publish success，topic:$topic")
@@ -238,7 +261,7 @@ class MqttManager {
     /**
      * 判断连接是否断开
      */
-    private fun isConnected(): Boolean {
+    fun isConnected(): Boolean {
         try {
             return mMqttClient?.isConnected ?: false
         } catch (e: Exception) {
@@ -255,7 +278,7 @@ class MqttManager {
             mMqttClient?.close()
             mMqttClient?.disconnect()
             mMqttClient?.unregisterResources()
-//            clear()
+            clear()
             MqttLoger.e("----> mqtt close success.")
         } catch (e: Exception) {
             MqttLoger.e("----> mqtt close failed.")
@@ -271,9 +294,6 @@ class MqttManager {
         return mConfig?.getClientId()
     }
 
-    fun getDesClientId(): String? {
-        return mConfig?.getDesClientId()
-    }
 
     private fun getSubscribers(): LinkedHashMap<String, MqttSubscriber> {
         return mSubscribers
@@ -282,23 +302,25 @@ class MqttManager {
     /**
      * 清空订阅事件
      */
-    fun clear() {
+    private fun clear() {
         getSubscribers().clear()
     }
 
-    fun getTopic(): String? {
-        //p2p相互发送消息
-        return if (mConfig!!.getServer()) {
-            mConfig?.topic_Client
-        } else {
-            mConfig?.topic_server
-        }
+    fun getPublishTopic(): String? {
+        return mConfig?.getPublishTopic()
     }
 
     companion object {
         fun getInstance(): MqttManager {
             return Holder.instance
         }
+
+        /**
+         * qos为0:至多一次（会发生消息丢失或重复）
+         * qos为1：至少一次（确保消息到达，但消息重复可能会发生）
+         * qos为2：只有一次，确保消息到达一次。
+         */
+        private const val QOS_LEVEL = 0
     }
 
     object Holder {

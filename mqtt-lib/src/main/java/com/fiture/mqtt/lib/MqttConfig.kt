@@ -9,48 +9,27 @@ package com.fiture.mqtt.lib
  *</pre>
  */
 class MqttConfig {
-    /**
-     * 服务器地址
-     */
-    private var baseUrl = "tcp://mqtt-cn-nif1wrghs0n.mqtt.aliyuncs.com:1883"
 
+    private var baseUrl = ""
     private var userName = ""
     private var password = ""
 
-    companion object {
-        const val instanceId = "mqtt-cn-nif1wrghs0n"
-        const val accessKey = "LTAI4GGosRrU2AwobeYgrNqK"
-        const val secretKey = "w1Kr9gx6Vbtl1L5ev9py00DTZ1646f"
-    }
+    /**
+     * 订阅主题
+     */
+    private var subscribeTopic = ""
 
     /**
-     * TODO:是否是模拟服务端
-     * A -Client :设置为false
-     * B- Server: 设置为true
+     * 发布主题
      */
-    private var isServer = true
-
-    // ClientId中的"GID_P2P_test_1@@@"由阿里云平台按规则配置，后面的参数自定义实现。
-    private var clientId = "GID_P2P_test_1@@@Slim004"
-    private var clientIdServer = "GID_P2P_test_1@@@Slim004"
-    private var clientIdClient = "GID_P2P_test_1@@@XiaoMi_Client004"
-
-    private var customerClientId = "12345"
+    private var publishTopic = ""
 
     /**
-     * 想发送给谁 目标ClientId
+     * mqtt 端口号
      */
-    private var desClientId = "54321"
+    private var port = 0
 
-    /**
-     * 该主题由阿里云平台按规则配置
-     */
-    private var parentTopic = "tesTopic"
-
-    // p2p规则：格式topic+"/p2p/GID_xxxx@@@xxx";
-    var topic_server: String = "$parentTopic/p2p/$clientIdServer"
-    var topic_Client: String = "$parentTopic/p2p/$clientIdClient"
-
+    private var clientId = ""
     /**
      * 模拟发送的数据包
      *
@@ -69,6 +48,19 @@ class MqttConfig {
         return this
     }
 
+    fun getBaseUrl(): String {
+        return "tcp://" + this.baseUrl + ":" + getPort()
+    }
+
+    fun setPort(port: Int): MqttConfig {
+        this.port = port
+        return this
+    }
+
+    private fun getPort(): Int {
+        return this.port
+    }
+
     fun setUserName(userName: String): MqttConfig {
         this.userName = userName
         return this
@@ -79,65 +71,40 @@ class MqttConfig {
         return this
     }
 
-    fun setCustomerId(customerId: String): MqttConfig {
-        this.customerClientId = customerId
+    fun setSubscribeTopic(subscribeTopic: String): MqttConfig {
+        this.subscribeTopic = subscribeTopic
+        return this
+    }
+    fun getSubscribeTopic():String{
+        return this.subscribeTopic
+    }
+
+    fun setPublishTopic(publishTopic: String): MqttConfig {
+        this.publishTopic = publishTopic
         return this
     }
 
-    fun getCustomerId(): String {
-        return this.customerClientId
+    fun getPublishTopic(): String {
+        return this.publishTopic
     }
 
-    fun setDesClientId(desClientId: String): MqttConfig {
-        this.desClientId = desClientId
-        return this
-    }
-
-    fun getDesClientId(): String {
-        return clientIdServer + this.desClientId
-    }
 
     fun setClientId(clientId: String): MqttConfig {
-        this.clientId = this.clientId + clientId
+        this.clientId = clientId
         return this
-    }
-
-    fun getBaseUrl(): String {
-        return this.baseUrl
     }
 
     fun getUserName(): String {
-        // 参考 https://help.aliyun.com/document_detail/54225.html
-        // Signature 方式
-        return "Signature|$accessKey|$instanceId"
+        return userName
     }
 
     //注意格式转化，防止因密码格式对，出现连接失败或断开的问题
-    fun getPassword(): CharArray {
-        var pwd: CharArray = charArrayOf()
-        try {
-            pwd = Tool.macSignature(clientId, secretKey).toCharArray()
-        } catch (e: Exception) {
-            MqttLoger.e("exception setPassword：$e")
-        }
-        return pwd
-    }
-
-    fun getServer(): Boolean {
-        return isServer
-    }
-
-    fun setServer(isServer: Boolean): MqttConfig {
-        this.isServer = isServer
-        return this
+    fun getPassword(): String {
+        //服务器直接返回
+        return password
     }
 
     fun getClientId(): String {
-        clientId = if (isServer) {
-            clientIdServer
-        } else {
-            clientIdClient
-        }
         return clientId
     }
 }

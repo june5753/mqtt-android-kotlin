@@ -2,28 +2,24 @@ package com.fiture.mqtt
 
 import android.annotation.SuppressLint
 import android.os.Bundle
-import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.fiture.mqtt.entity.MqttPassportEntity
 import com.fiture.mqtt.lib.MqttConfig
-import com.fiture.mqtt.lib.MqttLoger
 import com.fiture.mqtt.lib.MqttManager
 import kotlinx.android.synthetic.main.activity_main.*
 
+/**
+ * 测试界面
+ */
 class MainActivity : AppCompatActivity() {
-    private val subscriptionTopic = "AndroidTopic"
-    private val publishTopic = subscriptionTopic
-    private var mMqttConfig: MqttConfig? = null
 
-    /**
-     * 默认ClientID
-     */
-    private var defaultClientId = "12345"
+    private var mMqttConfig: MqttConfig? = null
 
     /**
      * 测试消息数量（以收到消息次数为准）
      */
-    private val MAX = 100
+    private val MAX = 10
 
     /**
      * 当前的发送消息次数
@@ -74,34 +70,37 @@ class MainActivity : AppCompatActivity() {
 
     @SuppressLint("SetTextI18n")
     private fun init() {
+        //配置信息一般由服务器返回
+        val entity = MqttPassportEntity()
+        entity.url = "post-cn-6ja1y8mg80d.mqtt.aliyuncs.com"
+        entity.port = 1883
+        entity.clientId = "GID-Session@@@f0012805-b951-4c08-ab3d-deb825758fc1"
+        entity.username = "Signature|LTAI4G9FhcothBFPxkhCTDaB|post-cn-6ja1y8mg80d"
+        entity.password = "P1/4tRpmHa9SY5Tg5uvip49+WlI="
+        entity.publishTopic = "machine/msg"
+        entity.subscribeTopic = "session/f0012805-b951-4c08-ab3d-deb825758fc1"
         // 初始化
-        mMqttConfig = MqttConfig().create()
-        MqttManager.getInstance().init(this, mMqttConfig!!) {
-            //收到消息
-            onMessageArrived { topic, message, qos ->
-                handleArrivedMessage(message.toString())
-            }
-            //连接失败
-            onConnectionLost {
-                showTips("连接已断开${it?.message.toString()}")
-                toast("连接已断开${it?.message.toString()}")
-            }
-            onDeliveryComplete {
-                tvPushMessageState.text = "已发送的消息：$it"
-            }
+        initMqtt(entity)
+    }
 
-            onConnectFailed {
-                toast("onConnectFailed${it?.message.toString()}")
-            }
-        }
+    @SuppressLint("SetTextI18n")
+    private fun initMqtt(entity: MqttPassportEntity) {
+        mMqttConfig = MqttConfig()
+            .setBaseUrl(entity.url)
+            .setPort(entity.port)
+            .setClientId(entity.clientId)
+            .setUserName(entity.username)
+            .setPassword(entity.password)
+            .setSubscribeTopic(entity.subscribeTopic)
+            .setPublishTopic(entity.publishTopic)
+            .create()
+        MqttManager.getInstance().init(this, mMqttConfig!!)
         showTips("服务器地址：${MqttManager.getInstance().getServerUrl()}")
         tvClientId.text = "当前Client id: " + MqttManager.getInstance().getClientId()
     }
 
-
     @SuppressLint("SetTextI18n")
     private fun setListener() {
-
         // 连接服务端
         btnConnect.setOnClickListener {
             connectStartTime = System.currentTimeMillis()
@@ -120,10 +119,10 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
-        // 订阅主题（阿里云订阅不需要）
         btnSubscribe.setOnClickListener {
             showTips("正在订阅中...")
-            MqttManager.getInstance().subscribe(subscriptionTopic) {
+            val subTopic = MqttManager.getInstance().getPublishTopic()
+            MqttManager.getInstance().subscribe(subTopic!!) {
 
                 onSubscriberSuccess {
                     showTips("订阅成功")
@@ -134,11 +133,11 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 onMessageArrived { topic, message, qos ->
-
+                    handleArrivedMessage(message.toString())
                 }
 
                 onDeliveryComplete {
-                    showTips("消息推送完毕：$it")
+                    tvPushMessageState.text = "消息推送完毕,已发送的消息：$it"
                 }
 
                 onConnectionLost {
@@ -154,8 +153,10 @@ class MainActivity : AppCompatActivity() {
                 sendMsgNum++
                 //p2p相互发送消息
                 val message = "消息来自：" + it.getClientId() + it.getJsonData(sendMsgNum)
+
+                //发送消息时对方的订阅的主题，即当前发布的主题一一对应
                 MqttManager.getInstance()
-                    .publishMessage(MqttManager.getInstance().getTopic()!!, message)
+                    .publishMessage(MqttManager.getInstance().getPublishTopic()!!, message)
             }
         }
 
@@ -167,6 +168,7 @@ class MainActivity : AppCompatActivity() {
                     showTips(it?.message)
                     toast(it?.message)
                 }
+
             }
         }
 
@@ -185,6 +187,7 @@ class MainActivity : AppCompatActivity() {
         tvReceiveMsgNum.text = "收到消息次数：$receiverMsgNum"
         tvMessage.text = "收到消息：$msg"
         tvMessageLength.text = "收到消息的长度：" + msg.length
+        //时间差计算方式：以先后两次到达的时间差作为当前一个完整的收发周期。
         if (receiverMsgNum % 2 == 1) {
             startTime = System.currentTimeMillis()
         } else {
@@ -211,7 +214,7 @@ class MainActivity : AppCompatActivity() {
             sendMsgNum++
             val message = "消息来自：" + it.getClientId() + it.getJsonData(sendMsgNum)
             MqttManager.getInstance()
-                .publishMessage(MqttManager.getInstance().getTopic()!!, message)
+                .publishMessage(MqttManager.getInstance().getPublishTopic()!!, message)
             tvSendMsgNum.text = "发送消息次数：$sendMsgNum"
         }
     }

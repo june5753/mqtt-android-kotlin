@@ -52,15 +52,15 @@ class MqttPassportEntity : Serializable {
     /**
      *MQTT Server连接地址
      */
-    var url = ""
+    var host = ""
 
     /**
      * MQTT 端口
      */
-    var port = 0
+    var mqttPort = 0
 
     /**
-     *WebSocket 端口
+     *WebSocket 端口(小程序端用)
      */
     var webSocketPort = 0
 

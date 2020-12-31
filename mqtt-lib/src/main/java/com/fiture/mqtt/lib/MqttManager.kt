@@ -1,7 +1,6 @@
 package com.fiture.mqtt.lib
 
 import android.content.Context
-import android.os.SystemClock
 import org.eclipse.paho.android.service.MqttAndroidClient
 import org.eclipse.paho.client.mqttv3.*
 
@@ -179,7 +178,7 @@ class MqttManager {
             connectionTimeout = 30
             //设置会话心跳时间 单位为秒 服务器会每隔15秒的时间向客户端发送个消息判断客户端是否在线，但这个方法并没有重连的机制
             keepAliveInterval = 15
-            isAutomaticReconnect = true
+            isAutomaticReconnect = false
             // 设置是否清空session,这里如果设置为false表示服务器会保留客户端的连接记录，这里设置为true表示每次连接到服务器都以新的身份连接
             isCleanSession = true
             userName = mConfig?.getUserName()
@@ -302,7 +301,7 @@ class MqttManager {
     /**
      * 清空订阅事件
      */
-    private fun clear() {
+    fun clear() {
         getSubscribers().clear()
     }
 

@@ -2,11 +2,15 @@ package com.fiture.mqtt
 
 import android.annotation.SuppressLint
 import android.os.Bundle
+import android.text.TextUtils
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.fiture.mqtt.entity.MqttPassportEntity
 import com.fiture.mqtt.lib.MqttConfig
+import com.fiture.mqtt.lib.MqttLoger
 import com.fiture.mqtt.lib.MqttManager
+import com.fiture.mqtt.utils.JsonParser
+import com.fiture.mqtt.entity.MessageEntity
 import kotlinx.android.synthetic.main.activity_main.*
 
 /**
@@ -68,26 +72,37 @@ class MainActivity : AppCompatActivity() {
         MqttManager.getInstance().close()
     }
 
-    @SuppressLint("SetTextI18n")
+    // 初始化
     private fun init() {
-        //配置信息一般由服务器返回
+        //模拟virgo
         val entity = MqttPassportEntity()
-        entity.url = "post-cn-6ja1y8mg80d.mqtt.aliyuncs.com"
-        entity.port = 1883
-        entity.clientId = "GID-Session@@@f0012805-b951-4c08-ab3d-deb825758fc1"
+        entity.host = "post-cn-6ja1y8mg80d.mqtt.aliyuncs.com"
+        entity.mqttPort = 1883
+        entity.clientId = "GID-Session@@@e90735c1-627b-4403-af29-716f7ec83dae"
         entity.username = "Signature|LTAI4G9FhcothBFPxkhCTDaB|post-cn-6ja1y8mg80d"
-        entity.password = "P1/4tRpmHa9SY5Tg5uvip49+WlI="
+        entity.password = "7jVe09oZxnCuu7etBvD2VGfjEGs="
+        entity.subscribeTopic = "session/e90735c1-627b-4403-af29-716f7ec83dae"
         entity.publishTopic = "machine/msg"
-        entity.subscribeTopic = "session/f0012805-b951-4c08-ab3d-deb825758fc1"
-        // 初始化
+
+        //模拟手机端
+        val entity2 = MqttPassportEntity()
+        entity2.host = "post-cn-6ja1y8mg80d.mqtt.aliyuncs.com"
+        entity2.mqttPort = 1883
+        entity2.clientId = "GID-Session@@@b6d29770-4fe6-4646-bee5-fc91bba472ac"
+        entity2.username = "Signature|LTAI4G9FhcothBFPxkhCTDaB|post-cn-6ja1y8mg80d"
+        entity2.password = "JFD9C4qnOGVBSY/wuRxAXzI8ACM="
+
+        entity2.subscribeTopic = "session/b6d29770-4fe6-4646-bee5-fc91bba472ac"
+        entity2.publishTopic = "machine/msg"
+
         initMqtt(entity)
     }
 
     @SuppressLint("SetTextI18n")
     private fun initMqtt(entity: MqttPassportEntity) {
         mMqttConfig = MqttConfig()
-            .setBaseUrl(entity.url)
-            .setPort(entity.port)
+            .setBaseUrl(entity.host)
+            .setPort(entity.mqttPort)
             .setClientId(entity.clientId)
             .setUserName(entity.username)
             .setPassword(entity.password)
@@ -154,9 +169,32 @@ class MainActivity : AppCompatActivity() {
                 //p2p相互发送消息
                 val message = "消息来自：" + it.getClientId() + it.getJsonData(sendMsgNum)
 
+                //TODO:与MQTT建立成功后，需要马上向Virgo端发送一条消息类型的 "ACK"的数据
+                val bean = MessageEntity()
+                bean.msgType = "ACK"
+                bean.sessionId = "e90735c1-627b-4403-af29-716f7ec83dae"
+                bean.ts = System.currentTimeMillis()
+                bean.destType = "APP"
+                //魔镜的序列号
+                bean.destId = "99999"
+
+                //手机端
+                val bean2 = MessageEntity()
+                bean2.msgType = "HI"
+                bean2.sessionId = "09cfa14f-4552-4b01-b74b-a2100c2d25a0"
+                bean2.ts = System.currentTimeMillis()
+                bean2.destType = "SLIM"
+                //魔镜的序列号
+                bean2.destId = "33333333kkk"
+
+                val content: String = JsonParser.getParser().toJson(bean)
+                if (content == null || TextUtils.isEmpty(content)) {
+                    return@setOnClickListener
+                }
+                MqttLoger.d("content==", content)
                 //发送消息时对方的订阅的主题，即当前发布的主题一一对应
                 MqttManager.getInstance()
-                    .publishMessage(MqttManager.getInstance().getPublishTopic()!!, message)
+                    .publishMessage(MqttManager.getInstance().getPublishTopic()!!, content)
             }
         }
 
@@ -174,6 +212,7 @@ class MainActivity : AppCompatActivity() {
 
         btnClear.setOnClickListener {
             reset()
+            MqttManager.getInstance().clear()
             showTips("已清空日志")
             tvPushMessageState.text = "已发送的消息:"
             tvReceiveMsgNum.text = "收到消息次数：$receiverMsgNum"
@@ -208,14 +247,6 @@ class MainActivity : AppCompatActivity() {
             tvAverTime.text = "100次完成后平均一次收发耗时（ms):$averTime"
             reset()
             return
-        }
-        mMqttConfig?.let {
-            //A收到消息后 再向B发送出去
-            sendMsgNum++
-            val message = "消息来自：" + it.getClientId() + it.getJsonData(sendMsgNum)
-            MqttManager.getInstance()
-                .publishMessage(MqttManager.getInstance().getPublishTopic()!!, message)
-            tvSendMsgNum.text = "发送消息次数：$sendMsgNum"
         }
     }
 
